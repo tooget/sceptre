@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from sceptre.exceptions import PathConversionError
+
 
 def get_external_stack_name(project_code, stack_name):
     """
@@ -62,3 +64,23 @@ def _call_func_on_values(func, attr, cls):
         for index, value in enumerate(attr):
             func_on_instance(index)
     return attr
+
+
+def normalise_path(path):
+    """
+    Converts backslashes to forward slashes.
+    Raises an PathConversionError if the path has a leading or
+    trailing slash.
+    :param path: A directory path
+    :type path: str
+    :raises: sceptre.exceptions.PathConversionError
+    :returns: A normalised path with forward slashes.
+    :returns: string
+    """
+    path = path.replace('\\', '/')
+    if path.endswith("/"):
+        raise PathConversionError(
+            "'{0}' is an invalid path string. Paths should "
+            "not have trailing slashes.".format(path)
+        )
+    return path

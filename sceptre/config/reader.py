@@ -11,7 +11,7 @@ import collections
 import datetime
 import fnmatch
 import logging
-from os import path, environ, walk
+from os import environ, path, walk
 from pkg_resources import iter_entry_points
 import yaml
 
@@ -23,8 +23,9 @@ from sceptre import __version__
 from sceptre.exceptions import InvalidSceptreDirectoryError
 from sceptre.exceptions import VersionIncompatibleError
 from sceptre.exceptions import ConfigFileNotFoundError
+from sceptre.helpers import normalise_path
 from sceptre.stack import Stack
-from . import strategies
+from sceptre.config import strategies
 
 ConfigAttributes = collections.namedtuple("Attributes", "required optional")
 
@@ -96,7 +97,7 @@ class ConfigReader(object):
     def __init__(self, context):
         self.logger = logging.getLogger(__name__)
         self.context = context
-        self.full_config_path = self.context.full_config_path()
+        self.full_config_path = normalise_path(self.context.full_config_path())
 
         # Check is valid sceptre project folder
         self._check_valid_project_path(self.full_config_path)
@@ -184,14 +185,14 @@ class ConfigReader(object):
                     if filename.startswith('config.'):
                         continue
 
-                    todo.add(path.join(directory_name, filename))
+                    todo.add(normalise_path(path.join(directory_name, filename)))
 
         stack_group_configs = {}
 
         while todo:
             abs_path = todo.pop()
-            rel_path = path.relpath(abs_path,
-                                    start=self.context.full_config_path())
+            rel_path = normalise_path(path.relpath(
+                abs_path, start=self.context.full_config_path()))
             directory, filename = path.split(rel_path)
 
             if directory in stack_group_configs:
@@ -209,7 +210,7 @@ class ConfigReader(object):
         stacks = set()
         for stack in stack_map.values():
             if not self.context.ignore_dependencies:
-                stack.dependencies = [stack_map[dep] for dep in stack.dependencies]
+                stack.dependencies = [stack_map[normalise_path(dep)] for dep in stack.dependencies]
             else:
                 stack.dependencies = []
             stacks.add(stack)
@@ -320,8 +321,7 @@ class ConfigReader(object):
         :rtype: dict
         """
         config = {}
-        abs_directory_path = path.join(
-            self.full_config_path, directory_path)
+        abs_directory_path = path.join(self.full_config_path, directory_path)
         if path.isfile(path.join(abs_directory_path, basename)):
             jinja_env = jinja2.Environment(
                 loader=jinja2.FileSystemLoader(abs_directory_path),
@@ -426,7 +426,7 @@ class ConfigReader(object):
         stack_name = path.splitext(rel_path)[0]
         abs_template_path = path.join(
             self.context.project_path, self.context.templates_path,
-            config["template_path"]
+            normalise_path(config["template_path"])
         )
 
         s3_details = self._collect_s3_details(

@@ -138,3 +138,10 @@ class ConfigFileNotFoundError(SceptreException):
     Error raised when a config file does not exist.
     """
     pass
+
+
+class PathConversionError(SceptreException):
+    """
+    Error raised when a path is unable to be converted.
+    """
+    pass
